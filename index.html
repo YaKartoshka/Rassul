@@ -1,202 +1,110 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Лабиринт с уровнями</title>
-<style>
-  body {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    background: #222;
-    color: #eee;
-    font-family: Arial, sans-serif;
-    margin: 0;
-    height: 100vh;
-    justify-content: center;
-  }
-  #maze {
-    display: grid;
-    grid-template-columns: repeat(10, 40px);
-    grid-template-rows: repeat(10, 40px);
-    gap: 2px;
-    background: #333;
-    margin-bottom: 10px;
-  }
-  .cell {
-    width: 40px;
-    height: 40px;
-    background: #eee;
-    box-sizing: border-box;
-  }
-  .wall {
-    background: #222;
-  }
-  .player {
-    background: #4caf50;
-  }
-  .goal {
-    background: #f44336;
-  }
-  #level-info {
-    margin-bottom: 10px;
-    font-size: 20px;
-  }
-  button {
-    padding: 8px 16px;
-    font-size: 16px;
-    cursor: pointer;
-    background: #555;
-    border: none;
-    color: #eee;
-    border-radius: 4px;
-  }
-  button:hover {
-    background: #777;
-  }
-</style>
+  <meta charset="UTF-8">
+  <title>Приглашение на День Рождения</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: 'Arial', sans-serif;
+      background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    .card {
+      background: white;
+      border-radius: 15px;
+      padding: 30px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      max-width: 90%;
+      width: 400px;
+      animation: popIn 1s ease;
+    }
+
+    .card h1 {
+      margin-top: 0;
+      font-size: 32px;
+      color: #ff4081;
+    }
+
+    .card p {
+      font-size: 18px;
+      color: #444;
+      margin: 10px 0;
+    }
+
+    .balloons {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      overflow: hidden;
+    }
+
+    .balloon {
+      position: absolute;
+      bottom: -150px;
+      width: 50px;
+      height: 70px;
+      background-color: #ff4081;
+      border-radius: 50% 50% 50% 50%;
+      animation: float 8s infinite ease-in;
+      opacity: 0.6;
+    }
+
+    .balloon:nth-child(2) {
+      left: 25%;
+      animation-delay: 1s;
+      background-color: #7c4dff;
+    }
+    .balloon:nth-child(3) {
+      left: 50%;
+      animation-delay: 2s;
+      background-color: #4dd0e1;
+    }
+    .balloon:nth-child(4) {
+      left: 75%;
+      animation-delay: 3s;
+      background-color: #fbc02d;
+    }
+
+    @keyframes float {
+      0% { transform: translateY(0); opacity: 0.6; }
+      50% { opacity: 1; }
+      100% { transform: translateY(-120vh); opacity: 0; }
+    }
+
+    @keyframes popIn {
+      from { transform: scale(0.7); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+  </style>
 </head>
 <body>
 
-<div id="level-info">Уровень: 1</div>
-<div id="maze"></div>
-<button id="restart-btn">Перезапустить уровень</button>
+  <div class="balloons">
+    <div class="balloon" style="left:10%;"></div>
+    <div class="balloon"></div>
+    <div class="balloon"></div>
+    <div class="balloon"></div>
+  </div>
 
-<script>
-  // Массив уровней - каждый уровень это карта 10x10 (0 - пусто, 1 - стена)
-  const levels = [
-    [
-      [1,1,1,1,1,1,1,1,1,1],
-      [1,0,0,0,1,0,0,0,0,1],
-      [1,0,1,0,1,0,1,1,0,1],
-      [1,0,1,0,0,0,0,1,0,1],
-      [1,0,1,1,1,1,0,1,0,1],
-      [1,0,0,0,0,1,0,1,0,1],
-      [1,1,1,1,0,1,0,1,0,1],
-      [1,0,0,1,0,0,0,1,0,1],
-      [1,0,0,0,0,1,0,0,0,1],
-      [1,1,1,1,1,1,1,1,1,1],
-    ],
-    [
-      [1,1,1,1,1,1,1,1,1,1],
-      [1,0,1,0,0,0,1,0,0,1],
-      [1,0,1,0,1,0,1,0,1,1],
-      [1,0,0,0,1,0,0,0,0,1],
-      [1,1,1,0,1,1,1,1,0,1],
-      [1,0,0,0,0,0,0,1,0,1],
-      [1,0,1,1,1,1,0,1,0,1],
-      [1,0,0,0,0,0,0,1,0,1],
-      [1,1,1,1,1,1,0,0,0,1],
-      [1,1,1,1,1,1,1,1,1,1],
-    ],
-    [
-      [1,1,1,1,1,1,1,1,1,1],
-      [1,0,0,0,1,0,0,0,0,1],
-      [1,1,1,0,1,0,1,1,0,1],
-      [1,0,0,0,0,0,0,1,0,1],
-      [1,0,1,1,1,1,0,1,0,1],
-      [1,0,1,0,0,1,0,1,0,1],
-      [1,0,1,0,1,1,0,1,0,1],
-      [1,0,0,0,0,0,0,1,0,1],
-      [1,1,1,1,1,1,0,0,0,1],
-      [1,1,1,1,1,1,1,1,1,1],
-    ]
-  ];
-
-  let currentLevel = 0;
-  let mazeMap = levels[currentLevel];
-  const mazeEl = document.getElementById('maze');
-  const levelInfo = document.getElementById('level-info');
-  const restartBtn = document.getElementById('restart-btn');
-  const rows = mazeMap.length;
-  const cols = mazeMap[0].length;
-
-  // Игрок и цель
-  let playerPos = {r: 1, c: 1};
-  let goalPos = {r: 8, c: 8};
-
-  function drawMaze() {
-    mazeEl.innerHTML = '';
-    mazeEl.style.gridTemplateColumns = `repeat(${cols}, 40px)`;
-    mazeEl.style.gridTemplateRows = `repeat(${rows}, 40px)`;
-
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        const cell = document.createElement('div');
-        cell.classList.add('cell');
-        if (mazeMap[r][c] === 1) cell.classList.add('wall');
-        cell.id = `cell-${r}-${c}`;
-        mazeEl.appendChild(cell);
-      }
-    }
-  }
-
-  function updatePositions() {
-    document.querySelectorAll('.player').forEach(el => el.classList.remove('player'));
-    document.querySelectorAll('.goal').forEach(el => el.classList.remove('goal'));
-    document.getElementById(`cell-${playerPos.r}-${playerPos.c}`).classList.add('player');
-    document.getElementById(`cell-${goalPos.r}-${goalPos.c}`).classList.add('goal');
-  }
-
-  function resetLevel() {
-    // При старте уровня игрок всегда в 1,1, цель в 8,8
-    playerPos = {r: 1, c: 1};
-    goalPos = {r: rows - 2, c: cols - 2};
-    updatePositions();
-  }
-
-  function nextLevel() {
-    currentLevel++;
-    if (currentLevel >= levels.length) {
-      alert('Поздравляю! Ты прошёл все уровни!');
-      currentLevel = 0; // Возвращаемся к первому уровню
-    }
-    mazeMap = levels[currentLevel];
-    drawMaze();
-    resetLevel();
-    levelInfo.textContent = `Уровень: ${currentLevel + 1}`;
-  }
-
-  // Инициализация
-  drawMaze();
-  resetLevel();
-
-  window.addEventListener('keydown', e => {
-    let newR = playerPos.r;
-    let newC = playerPos.c;
-
-    if (e.key === 'ArrowUp') newR--;
-    else if (e.key === 'ArrowDown') newR++;
-    else if (e.key === 'ArrowLeft') newC--;
-    else if (e.key === 'ArrowRight') newC++;
-
-    if (
-      newR >= 0 &&
-      newR < rows &&
-      newC >= 0 &&
-      newC < cols &&
-      mazeMap[newR][newC] === 0
-    ) {
-      playerPos = {r: newR, c: newC};
-      updatePositions();
-
-      if (playerPos.r === goalPos.r && playerPos.c === goalPos.c) {
-        setTimeout(() => {
-          alert('Уровень пройден!');
-          nextLevel();
-        }, 100);
-      }
-    }
-  });
-
-  restartBtn.addEventListener('click', () => {
-    resetLevel();
-  });
-</script>
+  <div class="card">
+    <h1>🎉 Приглашение 🎉</h1>
+    <p>Ты приглашён(а) на мой День Рождения!</p>
+    <p><strong>Когда:</strong> 12 января</p>
+    <p><strong>Где:</strong> Мангилик Ел, 4</p>
+    <p>Будет весело, приходи! 🎂🥳</p>
+  </div>
 
 </body>
 </html>
-
 
 
