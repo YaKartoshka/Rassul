@@ -1,110 +1,310 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <title>Приглашение на День Рождения</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <title>🚀 Космический шутер</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <style>
     html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      font-family: 'Arial', sans-serif;
-      background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      overflow: hidden;
+      margin: 0; padding: 0; overflow: hidden;
+      background: black;
+      font-family: Arial, sans-serif;
     }
-
-    .card {
-      background: white;
-      border-radius: 15px;
-      padding: 30px;
-      text-align: center;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-      max-width: 90%;
-      width: 400px;
-      animation: popIn 1s ease;
+    canvas {
+      display: block;
     }
-
-    .card h1 {
-      margin-top: 0;
-      font-size: 32px;
-      color: #ff4081;
-    }
-
-    .card p {
-      font-size: 18px;
-      color: #444;
-      margin: 10px 0;
-    }
-
-    .balloons {
+    #gameOverScreen {
       position: absolute;
-      width: 100%;
-      height: 100%;
-      z-index: -1;
-      overflow: hidden;
-    }
-
-    .balloon {
-      position: absolute;
-      bottom: -150px;
-      width: 50px;
-      height: 70px;
-      background-color: #ff4081;
-      border-radius: 50% 50% 50% 50%;
-      animation: float 8s infinite ease-in;
-      opacity: 0.6;
-    }
-
-    .balloon:nth-child(2) {
-      left: 25%;
-      animation-delay: 1s;
-      background-color: #7c4dff;
-    }
-    .balloon:nth-child(3) {
+      top: 35%;
       left: 50%;
-      animation-delay: 2s;
-      background-color: #4dd0e1;
+      transform: translate(-50%, -50%);
+      color: white;
+      text-align: center;
+      font-size: 32px;
+      display: none;
+      z-index: 2;
     }
-    .balloon:nth-child(4) {
-      left: 75%;
-      animation-delay: 3s;
-      background-color: #fbc02d;
+    #restartBtn {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 18px;
+      background: #444;
+      color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 4px;
     }
-
-    @keyframes float {
-      0% { transform: translateY(0); opacity: 0.6; }
-      50% { opacity: 1; }
-      100% { transform: translateY(-120vh); opacity: 0; }
+    /* Мобильные кнопки */
+    #controls {
+      position: absolute;
+      bottom: 10px;
+      width: 100%;
+      text-align: center;
+      z-index: 3;
     }
-
-    @keyframes popIn {
-      from { transform: scale(0.7); opacity: 0; }
-      to { transform: scale(1); opacity: 1; }
+    .btn {
+      display: inline-block;
+      width: 60px;
+      height: 60px;
+      margin: 5px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      line-height: 60px;
+      color: white;
+      font-size: 24px;
+      user-select: none;
     }
   </style>
 </head>
 <body>
+<canvas id="gameCanvas"></canvas>
 
-  <div class="balloons">
-    <div class="balloon" style="left:10%;"></div>
-    <div class="balloon"></div>
-    <div class="balloon"></div>
-    <div class="balloon"></div>
-  </div>
+<!-- Game Over -->
+<div id="gameOverScreen">
+  💥 Игра окончена!<br/>
+  <span id="finalScore">Очки: 0</span><br/>
+  <button id="restartBtn">Играть снова</button>
+</div>
 
-  <div class="card">
-    <h1>🎉 Приглашение 🎉</h1>
-    <p>Ты приглашён(а) на мой День Рождения!</p>
-    <p><strong>Когда:</strong> 12 января</p>
-    <p><strong>Где:</strong> Мангилик Ел, 4</p>
-    <p>Будет весело, приходи! 🎂🥳</p>
-  </div>
+<!-- Mobile Controls -->
+<div id="controls">
+  <div class="btn" id="left">⬅️</div>
+  <div class="btn" id="fire">🔫</div>
+  <div class="btn" id="right">➡️</div>
+</div>
 
+<script>
+  const canvas = document.getElementById("gameCanvas");
+  const ctx = canvas.getContext("2d");
+
+  let W = window.innerWidth;
+  let H = window.innerHeight;
+  canvas.width = W;
+  canvas.height = H;
+
+  let ship = {};
+  let asteroids = [];
+  let bullets = [];
+  let stars = [];
+  let score = 0;
+  let asteroidSpeed = 2;
+  let gameRunning = true;
+
+  function initShip() {
+    ship = {
+      x: W / 2 - W * 0.02,
+      y: H - H * 0.12,
+      width: W * 0.04,
+      height: H * 0.08,
+      speed: W * 0.01,
+      movingLeft: false,
+      movingRight: false,
+      draw() {
+        ctx.fillStyle = "#00ffe6";
+        ctx.beginPath();
+        ctx.moveTo(this.x + this.width / 2, this.y);
+        ctx.lineTo(this.x, this.y + this.height);
+        ctx.lineTo(this.x + this.width, this.y + this.height);
+        ctx.closePath();
+        ctx.fill();
+      }
+    };
+  }
+
+  function createStars() {
+    stars = [];
+    for (let i = 0; i < 150; i++) {
+      stars.push({
+        x: Math.random() * W,
+        y: Math.random() * H,
+        radius: Math.random() * 1.5,
+        speed: Math.random() * 0.7 + 0.3
+      });
+    }
+  }
+
+  function drawStars() {
+    ctx.fillStyle = "#fff";
+    for (let s of stars) {
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+      ctx.fill();
+      s.y += s.speed;
+      if (s.y > H) s.y = 0;
+    }
+  }
+
+  function spawnAsteroid() {
+    const radius = Math.random() * W * 0.02 + W * 0.02;
+    const x = Math.random() * (W - radius * 2) + radius;
+    asteroids.push({
+      x,
+      y: -radius,
+      radius,
+      speed: asteroidSpeed + Math.random() * 1.5
+    });
+  }
+
+  function drawAsteroid(a) {
+    ctx.fillStyle = "#aaa";
+    ctx.beginPath();
+    ctx.arc(a.x, a.y, a.radius, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function shootBullet() {
+    bullets.push({
+      x: ship.x + ship.width / 2,
+      y: ship.y,
+      radius: W * 0.007,
+      speed: H * 0.01
+    });
+  }
+
+  function drawBullets() {
+    ctx.fillStyle = "red";
+    for (let i = 0; i < bullets.length; i++) {
+      let b = bullets[i];
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+      ctx.fill();
+      b.y -= b.speed;
+
+      if (b.y < 0) {
+        bullets.splice(i, 1);
+        i--;
+      }
+    }
+  }
+
+  function moveShip() {
+    if (ship.movingLeft && ship.x > 0) {
+      ship.x -= ship.speed;
+    }
+    if (ship.movingRight && ship.x + ship.width < W) {
+      ship.x += ship.speed;
+    }
+  }
+
+  function updateAsteroids() {
+    for (let i = 0; i < asteroids.length; i++) {
+      let a = asteroids[i];
+      a.y += a.speed;
+      if (a.y - a.radius > H) {
+        asteroids.splice(i, 1);
+        i--;
+      }
+    }
+  }
+
+  function detectCollisions() {
+    // Астероид и корабль
+    for (let a of asteroids) {
+      const dx = a.x - (ship.x + ship.width / 2);
+      const dy = a.y - (ship.y + ship.height / 2);
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      if (distance < a.radius) {
+        endGame();
+      }
+    }
+
+    // Пули и астероиды
+    for (let i = 0; i < bullets.length; i++) {
+      for (let j = 0; j < asteroids.length; j++) {
+        const dx = bullets[i].x - asteroids[j].x;
+        const dy = bullets[i].y - asteroids[j].y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < bullets[i].radius + asteroids[j].radius) {
+          // Уничтожение
+          bullets.splice(i, 1);
+          asteroids.splice(j, 1);
+          score += 5;
+          return;
+        }
+      }
+    }
+  }
+
+  function drawScore() {
+    ctx.fillStyle = "#fff";
+    ctx.font = `${W * 0.015}px Arial`;
+    ctx.fillText("Очки: " + Math.floor(score), 20, 40);
+  }
+
+  function endGame() {
+    gameRunning = false;
+    document.getElementById("finalScore").textContent = "Очки: " + Math.floor(score);
+    document.getElementById("gameOverScreen").style.display = "block";
+  }
+
+  function resetGame() {
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = W;
+    canvas.height = H;
+    initShip();
+    createStars();
+    asteroids = [];
+    bullets = [];
+    score = 0;
+    asteroidSpeed = 2;
+    gameRunning = true;
+    document.getElementById("gameOverScreen").style.display = "none";
+    requestAnimationFrame(gameLoop);
+  }
+
+  function gameLoop() {
+    if (!gameRunning) return;
+    ctx.clearRect(0, 0, W, H);
+    drawStars();
+    moveShip();
+    updateAsteroids();
+    detectCollisions();
+    drawBullets();
+    ship.draw();
+    asteroids.forEach(drawAsteroid);
+    drawScore();
+
+    score += 0.05;
+    if (Math.floor(score) % 10 === 0) asteroidSpeed += 0.001;
+
+    requestAnimationFrame(gameLoop);
+  }
+
+  // Интервалы
+  setInterval(() => {
+    if (gameRunning) spawnAsteroid();
+  }, 400);
+
+  // Управление клавиатурой
+  window.addEventListener("keydown", e => {
+    if (e.key === "ArrowLeft") ship.movingLeft = true;
+    if (e.key === "ArrowRight") ship.movingRight = true;
+    if (e.key === " " || e.code === "Space") shootBullet();
+  });
+  window.addEventListener("keyup", e => {
+    if (e.key === "ArrowLeft") ship.movingLeft = false;
+    if (e.key === "ArrowRight") ship.movingRight = false;
+  });
+
+  // Управление мобильное
+  document.getElementById("left").addEventListener("touchstart", () => ship.movingLeft = true);
+  document.getElementById("right").addEventListener("touchstart", () => ship.movingRight = true);
+  document.getElementById("left").addEventListener("touchend", () => ship.movingLeft = false);
+  document.getElementById("right").addEventListener("touchend", () => ship.movingRight = false);
+  document.getElementById("fire").addEventListener("touchstart", shootBullet);
+
+  // Кнопка рестарт
+  document.getElementById("restartBtn").addEventListener("click", resetGame);
+  window.addEventListener("resize", resetGame);
+
+  resetGame();
+</script>
 </body>
 </html>
+
+
+
+
 
 
